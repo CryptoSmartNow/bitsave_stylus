@@ -3,6 +3,9 @@
 
 // Only run this as a WASM if the export-abi feature is not set.
 #![cfg_attr(not(feature = "export-abi"), no_main)]
+
+mod childBitsave;
+
 extern crate alloc;
 
 /// Initializes a custom, global allocator for Rust programs compiled to WASM.
@@ -11,16 +14,19 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 /// Import the Stylus SDK along with alloy primitive types for use in our program.
 use stylus_sdk::{alloy_primitives::U256, prelude::*};
+use stylus_sdk::storage::{StorageU256, StorageUint};
 
 // Entrypoint is a user data type
-//
-sol_storage! {
-    #[entrypoint]
-    pub struct Bitsave {
-        uint256 number;
-    }
-//! Rust implementation of the Counter contract example provided by Foundry.
-//! Warning: this code is a template only and has not been audited.
+// sol_storage! {
+//     #[entrypoint]
+//     pub struct Bitsave {
+//         uint256 number;
+//     }
+// }
+
+#[solidity_storage]
+pub struct Bitsave {
+    number: StorageU256
 }
 
 /// Define an implementation of the generated Counter struct, defining a set_number

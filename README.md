@@ -10,7 +10,7 @@ The user flow can be found [here](flow.md).
 
 ## Features offered by contract
 - Savings (core functionality)
-- Token swap
+- Token swap (uniswap porting to stylus)
 
 ## Savings mode
 The savings modes are the SAFE and the RISK mode.
@@ -25,6 +25,7 @@ is that profit in price of token is lost. Risk mode does the opposite of this.
 - Users list with address and other details
 - User Address, Savings vector mapping
 - Saving struct
+
 
 
 
