@@ -2,5 +2,6 @@
 
 #[cfg(feature = "export-abi")]
 fn main() {
-    stylus_hello_world::main();
+    main(); // bitsave_stylus::main() called ???
 }
+
