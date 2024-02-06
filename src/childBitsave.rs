@@ -1,7 +1,6 @@
 
 //! Implements Bitsave protocol for Arbitrum Stylus, providing a Solidity ABI-equivalent
 
-
 // Only run this as a WASM if the export-abi feature is not set.
 #![cfg_attr(not(feature = "export-abi"), no_main)]
 
@@ -12,8 +11,8 @@ use stylus_sdk::{alloy_primitives::U256, prelude::*};
 
 
 sol_storage! {
-    #[entrypoint]
-    pub struct ChildContract {
+    // #[entrypoint]
+    pub struct ChildBitsave {
         // parent bitsave contract
         address bitsaveAddress;
         // the user with this child contract
@@ -27,7 +26,7 @@ sol_storage! {
         bool isValid;
         uint256 amount;
         address tokenId;
-        uint256 interestAccumulated;
+        uint25 interestAccumulated;
         uint256 startTime;
         uint penaltyPercentage;
         uint256 maturityTime;
@@ -42,7 +41,7 @@ sol_storage! {
 }
 
 #[external]
-impl ChildContract {
+impl ChildBitsave {
 
     pub fn getSaving(nameOfSaving: String) -> Result<(), Vec<u8>> {
         todo!()

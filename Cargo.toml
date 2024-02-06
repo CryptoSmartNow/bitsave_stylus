@@ -1,12 +1,12 @@
 [package]
-name = "stylus-hello-world"
+name = "bitsave-stylus"
 version = "0.1.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/OffchainLabs/stylus-hello-world"
 repository = "https://github.com/OffchainLabs/stylus-hello-world"
 keywords = ["arbitrum", "ethereum", "stylus", "alloy"]
-description = "Stylus hello world example"
+description = "Bitsave arbitrum implementation"
 
 [dependencies]
 alloy-primitives = "0.3.1"
@@ -21,7 +21,7 @@ ethers = "2.0"
 eyre = "0.6.8"
 
 [features]
-export-abi = ["stylus-sdk/export-abi"]
+export-abi = ["stylus-sdk/export-abi", "stylus-sdk/storage-cache", "stylus-sdk/reentrant"]
 debug = ["stylus-sdk/debug"]
 
 [[bin]]

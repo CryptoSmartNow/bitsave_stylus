@@ -4,6 +4,7 @@
 // Only run this as a WASM if the export-abi feature is not set.
 #![cfg_attr(not(feature = "export-abi"), no_main)]
 
+mod interfaces;
 mod childBitsave;
 
 extern crate alloc;
@@ -12,9 +13,13 @@ extern crate alloc;
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
+use std::ops::Deref;
+use alloy_primitives::{Address, StorageKey};
 /// Import the Stylus SDK along with alloy primitive types for use in our program.
-use stylus_sdk::{alloy_primitives::U256, prelude::*};
-use stylus_sdk::storage::{StorageU256, StorageUint};
+use stylus_sdk::{alloy_primitives::U256, msg, prelude::*};
+use stylus_sdk::{deploy::RawDeploy, call::Call};
+use stylus_sdk::storage::{StorageAddress, StorageB256, StorageB8, StorageMap, StorageString, StorageU256, StorageUint, StorageVec};
+use crate::childBitsave::ChildBitsave;
 
 // Entrypoint is a user data type
 // sol_storage! {
@@ -24,29 +29,51 @@ use stylus_sdk::storage::{StorageU256, StorageUint};
 //     }
 // }
 
-#[solidity_storage]
-pub struct Bitsave {
-    number: StorageU256
+sol_storage! {
+    #[entrypoint]
+    pub struct Bitsave {
+        uint256 number;
+        address usersAddresses;
+        mapping(address => address) addressToUserBs;
+    }
 }
 
 /// Define an implementation of the generated Counter struct, defining a set_number
 /// and increment method using the features of the Stylus SDK.
 #[external]
 impl Bitsave {
-    /// Gets the number from storage.
-    pub fn number(&self) -> Result<U256, Vec<u8>> {
-        Ok(self.number.get())
+
+    #[payable]
+    pub fn join_bitsave(&mut self, input: Vec<u8>) -> Result<Address, Vec<u8>> {
+        let endownment = U256::from_be_bytes::<32>(
+            input[1..].try_into().unwrap()
+        );
+        // todo: fix this to ChildBitsave
+        let child_address: Address = unsafe {
+            RawDeploy::new()
+                .flush_storage_cache()
+                .deploy(
+                    &input[..],
+                    endownment
+                )?
+        };
+        self.addressToUserBs.insert(msg::sender(), child_address);
+        Ok(child_address)
     }
 
-    /// Sets a number in storage to a user-specified value.
-    pub fn set_number(&mut self, new_number: U256) -> Result<(), Vec<u8>> {
-        self.number.set(new_number);
-        Ok(())
+    pub fn get_user_child_contract(&self) -> Result<Address, Vec<u8>> {
+        Ok(self.addressToUserBs.get(msg::sender()))
     }
 
-    /// Increments number and updates it values in storage.
-    pub fn increment(&mut self) -> Result<(), Vec<u8>> {
-        let number = self.number.get();
-        self.set_number(number + U256::from(1))
+    pub fn create_savings(&mut self) -> Result<bool, Vec<u8>> {
+        Ok(true)
+    }
+
+    pub fn increment_savings(&mut self) -> Result<bool, Vec<u8>> {
+        Ok(true)
+    }
+
+    pub fn withdraw_savings(&mut self) -> Result<bool, Vec<u8>> {
+        Ok(true)
     }
 }
