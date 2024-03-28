@@ -35,6 +35,8 @@ sol_storage! {
         uint256 number;
         address usersAddresses;
         mapping(address => address) addressToUserBs;
+        // one source of truth structure
+       mapping(address => ChildBitsave) addressToChildBitsave;
     }
 }
 
@@ -57,6 +59,9 @@ impl Bitsave {
                     endownment
                 )?
         };
+
+        // todo: map the child contract to the user address
+        // self.addressToChildBitsave
         self.addressToUserBs.insert(msg::sender(), child_address);
         Ok(child_address)
     }
