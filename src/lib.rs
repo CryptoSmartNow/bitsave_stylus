@@ -16,7 +16,7 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 use std::ops::Deref;
 use alloy_primitives::{Address, StorageKey};
 /// Import the Stylus SDK along with alloy primitive types for use in our program.
-use stylus_sdk::{alloy_primitives::U256, msg, prelude::*};
+use stylus_sdk::{alloy_primitives::U256, evm, msg, prelude::*};
 use stylus_sdk::{deploy::RawDeploy, call::Call};
 use stylus_sdk::storage::{StorageAddress, StorageB256, StorageB8, StorageMap, StorageString, StorageU256, StorageUint, StorageVec};
 use crate::childBitsave::ChildBitsave;
@@ -37,6 +37,12 @@ sol_storage! {
         mapping(address => address) addressToUserBs;
         // one source of truth structure
        mapping(address => ChildBitsave) addressToChildBitsave;
+    }
+}
+
+sol_interface! {
+    interface IChildBitsave {
+        function create_saving(bool useSafeMode) payable returns (bool);
     }
 }
 
@@ -70,8 +76,20 @@ impl Bitsave {
         Ok(self.addressToUserBs.get(msg::sender()))
     }
 
-    pub fn create_savings(&mut self) -> Result<bool, Vec<u8>> {
-        Ok(true)
+    pub fn create_savings(
+        &mut self,
+        useSafeMode: bool
+    ) -> Result<bool, Vec<u8>> {
+        // Initiate the bs_child instance
+        let bs_child = IChildBitsave {
+            address: self.addressToUserBs.get(msg::sender())
+        };
+        // send the create sving call to bitsave child
+        let mut config = Call::new_in(self)
+            .gas(evm::gas_left() / 2)
+            .value(msg::value()); // todo: manage amounts
+        
+        Ok(bs_child.create_saving(config, useSafeMode)?)
     }
 
     pub fn increment_savings(&mut self) -> Result<bool, Vec<u8>> {
