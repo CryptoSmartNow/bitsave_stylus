@@ -14,10 +14,12 @@ extern crate alloc;
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use std::ops::Deref;
+use std::ptr::eq;
 use alloy_primitives::{Address, StorageKey};
 /// Import the Stylus SDK along with alloy primitive types for use in our program.
 use stylus_sdk::{alloy_primitives::U256, evm, msg, prelude::*};
 use stylus_sdk::{deploy::RawDeploy, call::Call};
+use stylus_sdk::contract::address;
 use stylus_sdk::storage::{StorageAddress, StorageB256, StorageB8, StorageMap, StorageString, StorageU256, StorageUint, StorageVec};
 use crate::childBitsave::ChildBitsave;
 
@@ -28,6 +30,14 @@ use crate::childBitsave::ChildBitsave;
 //         uint256 number;
 //     }
 // }
+
+
+sol_interface! {
+    interface IChildBitsave {
+        function create_saving(bool useSafeMode) payable returns (bool);
+        function increment_saving() payable returns (uint);
+    }
+}
 
 sol_storage! {
     #[entrypoint]
@@ -40,11 +50,13 @@ sol_storage! {
     }
 }
 
-sol_interface! {
-    interface IChildBitsave {
-        function create_saving(bool useSafeMode) payable returns (bool);
+
+fn make_child_contract_instance(userCCAddress: Address) -> IChildBitsave {
+    IChildBitsave {
+        address: userCCAddress
     }
 }
+
 
 /// Define an implementation of the generated Counter struct, defining a set_number
 /// and increment method using the features of the Stylus SDK.
@@ -71,32 +83,48 @@ impl Bitsave {
         self.addressToUserBs.insert(msg::sender(), child_address);
         Ok(child_address)
     }
+    
+    fn check_user_opt_in(&self) -> Result<bool, Vec<u8>> {
+        Ok(!self.addressToUserBs.get(msg::sender()).eq(&Address::ZERO))
+    } 
 
     pub fn get_user_child_contract(&self) -> Result<Address, Vec<u8>> {
+        self.check_user_opt_in()?;
         Ok(self.addressToUserBs.get(msg::sender()))
     }
 
     pub fn create_savings(
         &mut self,
-        useSafeMode: bool
+        use_safe_mode: bool
     ) -> Result<bool, Vec<u8>> {
+        self.check_user_opt_in()?;
         // Initiate the bs_child instance
-        let bs_child = IChildBitsave {
-            address: self.addressToUserBs.get(msg::sender())
-        };
+        let bs_child = make_child_contract_instance(
+            self.addressToUserBs.get(msg::sender())
+        );
         // send the create sving call to bitsave child
-        let mut config = Call::new_in(self)
+        let config = Call::new_in(self)
             .gas(evm::gas_left() / 2)
             .value(msg::value()); // todo: manage amounts
         
-        Ok(bs_child.create_saving(config, useSafeMode)?)
+        Ok(bs_child.create_saving(config, use_safe_mode)?)
     }
 
-    pub fn increment_savings(&mut self) -> Result<bool, Vec<u8>> {
-        Ok(true)
+    pub fn increment_savings(&mut self) -> Result<U256, Vec<u8>> {
+        self.check_user_opt_in()?;
+        let bs_child = make_child_contract_instance(
+            self.addressToUserBs.get(msg::sender())
+        );
+        // send increment contract
+        let config = Call::new_in(self).value(msg::value());
+        Ok(
+            bs_child.increment_saving(config).unwrap()
+        )
     }
 
     pub fn withdraw_savings(&mut self) -> Result<bool, Vec<u8>> {
-        Ok(true)
+        // get savings data
+        self.check_user_opt_in()?;
+        Ok(false)
     }
 }
